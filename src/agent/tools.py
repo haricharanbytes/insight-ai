@@ -13,6 +13,7 @@ from src.analysis.filtering import filter_data
 from src.analysis.outliers import detect_outliers
 from src.analysis.statistics import get_column_summary, run_statistical_test
 from src.analysis.timeseries import analyze_time_series
+from src.analysis.charting import generate_chart
 
 TOOLS = {
     "get_column_summary": get_column_summary,
@@ -22,6 +23,7 @@ TOOLS = {
     "calculate_correlation": calculate_correlation,
     "detect_outliers": detect_outliers,
     "run_statistical_test": run_statistical_test,
+    "generate_chart": generate_chart,
 }
 
 

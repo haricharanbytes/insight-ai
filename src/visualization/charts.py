@@ -188,6 +188,8 @@ def _column_summary(out: dict) -> dict | None:
     title = f"Most common values in {col}"
     return _chart("bar", title, f"The {len(rows)} most frequent values of {col}.", data, _layout(title, col, "Rows"))
 
+def _generated(out: dict) -> dict | None:
+    return out["result"].get("chart")
 
 BUILDERS = {
     "group_by_aggregate": _bar_or_donut,
@@ -196,6 +198,7 @@ BUILDERS = {
     "detect_outliers": _outliers,
     "run_statistical_test": _stat_test,
     "get_column_summary": _column_summary,
+    "generate_chart": _generated,
 }
 
 

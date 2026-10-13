@@ -5,6 +5,7 @@ functions actually accept. tests/test_agent_schemas.py also checks them against 
 function signatures.
 """
 from src.analysis.aggregation import AGG_OPS
+from src.analysis.charting import CHART_TYPES
 from src.analysis.correlations import METHODS as CORR_METHODS
 from src.analysis.filtering import FILTER_OPS
 from src.analysis.outliers import METHODS as OUTLIER_METHODS
@@ -142,6 +143,21 @@ TOOL_SCHEMAS: dict[str, dict] = {
                 "alpha": {"type": "number", "description": "Significance level, default 0.05."},
             },
             "required": ["test"],
+        },
+    },
+    "generate_chart": {
+        "description": "Draw a histogram (distribution of one numeric column), scatter plot (two numeric columns) or box plot (one numeric column, optionally per category). For bar and line charts use group_by_aggregate or analyze_time_series instead.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "chart_type": {"type": "string", "enum": list(CHART_TYPES)},
+                "x": {"type": "string", "description": "Numeric column (the values for histogram/box, the x axis for scatter)."},
+                "y": {"type": "string", "description": "Numeric column for the y axis (scatter only)."},
+                "group_by": {"type": "string", "description": "Categorical column to split a box plot by."},
+                "bins": {"type": "integer", "description": "Histogram bins, 5-60 (default 20)."},
+                "filters": FILTERS,
+            },
+            "required": ["chart_type", "x"],
         },
     },
 }

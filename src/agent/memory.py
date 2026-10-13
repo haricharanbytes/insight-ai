@@ -11,7 +11,7 @@ MAX_EVIDENCE_PER_TURN = 3
 
 def _view(output: dict, rows_limit: int) -> dict:
     view = {k: output.get(k) for k in ("tool", "method", "inputs", "rows_used", "warnings")}
-    view["result"] = {k: v for k, v in (output.get("result") or {}).items() if k != "matrix"}
+    view["result"] = {k: v for k, v in (output.get("result") or {}).items() if k not in ("matrix", "chart")}
     table = output.get("table")
     if table:
         rows = table.get("rows", [])
