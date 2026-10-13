@@ -14,6 +14,7 @@ from src.agent.llm_client import get_llm_client
 from src.agent.memory import add_turn
 from src.agent.orchestrator import run_agent
 from src.agent.demo_router import run_demo
+from src.visualization.charts import chart_for_output
 
 from .errors import ApiError
 from .sessions import Session, get_store
@@ -142,7 +143,7 @@ def tools() -> dict:
 def call_tool(name: str, body: ToolRequest, session: Session = Depends(dataset_session)) -> dict:
     output = run_tool(session.load.df, name, body.params)
     result_id = session.add_result(output)
-    return {**output, "result_id": result_id}
+    return {**output, "result_id": result_id, "chart": chart_for_output(output)}
 
 
 @router.get("/results/{result_id}")
@@ -171,5 +172,6 @@ def ask(body: AskRequest, session: Session = Depends(dataset_session)) -> dict:
     for step in run["steps"]:
         if step["ok"]:
             step["result_id"] = session.add_result(step["output"])
+            step["chart"] = chart_for_output(step["output"])
     add_turn(session.history, question, run["answer"], run["steps"])
     return {"question": question, **run}
