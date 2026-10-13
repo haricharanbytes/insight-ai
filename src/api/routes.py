@@ -13,6 +13,7 @@ from src.data.validation import SheetSelectionRequired
 from src.agent.llm_client import get_llm_client
 from src.agent.memory import add_turn
 from src.agent.orchestrator import run_agent
+from src.agent.demo_router import run_demo
 
 from .errors import ApiError
 from .sessions import Session, get_store
@@ -160,14 +161,13 @@ class AskRequest(BaseModel):
 @router.post("/ask")
 def ask(body: AskRequest, session: Session = Depends(dataset_session)) -> dict:
     client = get_llm_client()
-    if client is None:
-        raise ApiError(503, "llm_not_configured",
-                       "No LLM is configured. Set LLM_API_KEY and LLM_MODEL in .env, then restart.")
     question = body.question.strip()
     if not question:
         raise ApiError(422, "empty_question", "Please enter a question.")
-
-    run = run_agent(client, session.load.df, session.profile, question, session.history)
+    if client is None:
+        run = run_demo(session.load.df, session.profile, question)
+    else:
+        run = run_agent(client, session.load.df, session.profile, question, session.history)
     for step in run["steps"]:
         if step["ok"]:
             step["result_id"] = session.add_result(step["output"])

@@ -54,7 +54,7 @@ def test_ask_needs_dataset_and_llm(monkeypatch):
     h = session_with_data()
     use(monkeypatch, None)
     r = client.post("/api/ask", json={"question": "hi"}, headers=h)
-    assert r.status_code == 503 and r.json()["code"] == "llm_not_configured"
+    assert r.status_code == 200 and r.json()["mode"] == "demo"
 
 
 def test_ask_validation_and_llm_errors(monkeypatch):
