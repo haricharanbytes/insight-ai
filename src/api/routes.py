@@ -10,6 +10,9 @@ from src.analysis.common import df_to_table
 from src.data.loader import load_dataset
 from src.data.profiler import profile_dataset
 from src.data.validation import SheetSelectionRequired
+from src.agent.llm_client import get_llm_client
+from src.agent.memory import add_turn
+from src.agent.orchestrator import run_agent
 
 from .errors import ApiError
 from .sessions import Session, get_store
@@ -147,3 +150,26 @@ def get_result(result_id: str, session: Session = Depends(current_session)) -> d
     if stored is None:
         raise ApiError(404, "result_not_found", "No such result in this session.")
     return stored
+
+# AI analyst
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=2000)
+
+
+@router.post("/ask")
+def ask(body: AskRequest, session: Session = Depends(dataset_session)) -> dict:
+    client = get_llm_client()
+    if client is None:
+        raise ApiError(503, "llm_not_configured",
+                       "No LLM is configured. Set LLM_API_KEY and LLM_MODEL in .env, then restart.")
+    question = body.question.strip()
+    if not question:
+        raise ApiError(422, "empty_question", "Please enter a question.")
+
+    run = run_agent(client, session.load.df, session.profile, question, session.history)
+    for step in run["steps"]:
+        if step["ok"]:
+            step["result_id"] = session.add_result(step["output"])
+    add_turn(session.history, question, run["answer"], run["steps"])
+    return {"question": question, **run}

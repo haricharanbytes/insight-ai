@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_base_url: str = "https://openrouter.ai/api/v1"
     llm_model: str = ""
+    llm_fallback_models: str = ""  # comma-separated model IDs, tried in order after llm_model
     llm_timeout_seconds: int = 60
     llm_max_retries: int = 2
 
@@ -36,6 +37,16 @@ class Settings(BaseSettings):
     def demo_mode(self) -> bool:
         """Demo mode = no usable LLM config; rule-based routing is used instead."""
         return not (self.llm_api_key and self.llm_model)
+
+    @property
+    def llm_models(self) -> list[str]:
+        """Primary model first, then fallbacks, without duplicates."""
+        names = [self.llm_model] + self.llm_fallback_models.split(",")
+        out: list[str] = []
+        for n in (x.strip() for x in names):
+            if n and n not in out:
+                out.append(n)
+        return out
 
     @property
     def max_upload_bytes(self) -> int:

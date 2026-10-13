@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from src.analysis.common import AnalysisError
 from src.data.validation import DataLoadError, FileTooLargeError
+from src.agent.llm_client import LLMError
 
 logger = logging.getLogger("insightai.api")
 
@@ -39,6 +40,11 @@ def register_handlers(app: FastAPI) -> None:
     async def _analysis_error(request: Request, exc: AnalysisError):
         status = 404 if exc.code == "unknown_tool" else 422
         return JSONResponse(_body(exc.code, exc.message, exc.details), status_code=status)
+    
+    @app.exception_handler(LLMError)
+    async def _llm_error(request: Request, exc: LLMError):
+        status = 502 if exc.code == "llm_auth" else 503
+        return JSONResponse(_body(exc.code, exc.message), status_code=status)
 
     @app.exception_handler(Exception)
     async def _unexpected(request: Request, exc: Exception):
