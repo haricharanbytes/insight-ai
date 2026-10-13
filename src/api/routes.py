@@ -15,6 +15,9 @@ from src.agent.memory import add_turn
 from src.agent.orchestrator import run_agent
 from src.agent.demo_router import run_demo
 from src.visualization.charts import chart_for_output
+from fastapi.responses import Response
+from src.analysis.filtering import apply_filters
+from src.reports.exporter import build_report, dataframe_to_csv, table_to_csv
 
 from .errors import ApiError
 from .sessions import Session, get_store
@@ -174,4 +177,47 @@ def ask(body: AskRequest, session: Session = Depends(dataset_session)) -> dict:
             step["result_id"] = session.add_result(step["output"])
             step["chart"] = chart_for_output(step["output"])
     add_turn(session.history, question, run["answer"], run["steps"])
+    session.report_items.append({
+        "question": question, "answer": run["answer"],
+        "unverified": run["grounding"]["unverified_numbers"],
+        "tool_steps": [{"output": s["output"], "chart": s.get("chart")} for s in run["steps"] if s["ok"]],
+    })
+    del session.report_items[:-30]
     return {"question": question, **run}
+# ------------------------------------------------------------ exports
+
+def _download(content: str, filename: str, media: str) -> Response:
+    safe = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in filename)
+    return Response(content, media_type=media, headers={"Content-Disposition": f'attachment; filename="{safe}"'})
+
+
+@router.get("/export/result/{result_id}.csv")
+def export_result(result_id: str, session: Session = Depends(current_session)):
+    stored = session.results.get(result_id)
+    if stored is None:
+        raise ApiError(404, "result_not_found", "No such result in this session.")
+    table = stored["output"].get("table")
+    if not table:
+        raise ApiError(404, "no_table", "This result has no table to export.")
+    return _download(table_to_csv(table), f"{stored['output']['tool']}_{result_id}.csv", "text/csv; charset=utf-8")
+
+
+class DatasetExport(BaseModel):
+    filters: list[dict] | None = None
+
+
+@router.post("/export/dataset.csv")
+def export_dataset(body: DatasetExport, session: Session = Depends(dataset_session)):
+    df, _, _ = apply_filters(session.load.df, body.filters)
+    if len(df) == 0:
+        raise ApiError(422, "no_rows", "No rows match those filters, so there is nothing to export.")
+    stem = session.load.filename.rsplit(".", 1)[0]
+    name = f"{stem}_filtered.csv" if body.filters else f"{stem}.csv"
+    return _download(dataframe_to_csv(df), name, "text/csv; charset=utf-8")
+
+
+@router.get("/export/report.html")
+def export_report(session: Session = Depends(dataset_session)):
+    html_doc = build_report(session.load.filename, session.profile, session.history, session.report_items)
+    stem = session.load.filename.rsplit(".", 1)[0]
+    return _download(html_doc, f"{stem}_report.html", "text/html; charset=utf-8")
