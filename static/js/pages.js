@@ -177,22 +177,39 @@ const Pages = {
     box.append(el("h1", { text: "Visualizations" }),
       el("p", { class: "muted", text: "Charts from your questions appear here, plus anything you build below. All charts are drawn from the dataset's real values." }));
 
-    if (!num.length) box.append(el("div", { class: "card muted", text: "This dataset has no numeric columns to chart directly." }));
+        const dates = columnsOf(ds, "datetime");
+    if (!num.length && !dates.length) box.append(el("div", { class: "card muted", text: "This dataset has no numeric or date columns to chart directly." }));
     else {
       const sel = (opts, blank) => el("select", {}, blank ? el("option", { value: "", text: blank }) : null, opts.map((c) => el("option", { value: c.name, text: c.name })));
-      const type = el("select", {}, ["histogram", "scatter", "box"].map((t) => el("option", { value: t, text: t })));
-      const x = sel(num), y = sel(num), g = sel(cat, "(no grouping)");
+      const types = [];
+      if (dates.length) types.push("line (over time)");
+      if (num.length) types.push("histogram", "scatter", "box");
+      const type = el("select", {}, types.map((t) => el("option", { value: t, text: t })));
+      const x = sel(num.length ? num : dates), y = sel(num), g = sel(cat, "(no grouping)");
+      const d = sel(dates), v = sel(num, "(count rows)"), f = el("select", {}, [["M", "Monthly"], ["Q", "Quarterly"], ["Y", "Yearly"], ["W", "Weekly"], ["D", "Daily"]].map(([k, t]) => el("option", { value: k, text: t })));
+      const o = el("select", {}, ["sum", "mean", "median", "min", "max"].map((t) => el("option", { value: t, text: t })));
       if (num[1]) y.value = num[1].name;
+      if (num[0]) v.value = num[0].name;
       const fx = el("label", {}, "Column (x)", x), fy = el("label", {}, "y column", y), fg = el("label", {}, "Split by", g);
-      const sync = () => { fy.hidden = type.value !== "scatter"; fg.hidden = type.value !== "box"; };
+      const fd = el("label", {}, "Date column", d), fv = el("label", {}, "Value", v), ff = el("label", {}, "Period", f), fo = el("label", {}, "Aggregate", o);
+      const sync = () => {
+        const line = type.value.startsWith("line");
+        fx.hidden = line; fd.hidden = fv.hidden = ff.hidden = fo.hidden = !line;
+        fy.hidden = type.value !== "scatter"; fg.hidden = type.value !== "box";
+      };
       type.addEventListener("change", sync); sync();
       const go = el("button", { class: "btn primary", type: "button", text: "Draw chart", onclick: () => {
+        if (type.value.startsWith("line")) {
+          const p = { date_column: d.value, freq: f.value };
+          if (v.value) { p.value_column = v.value; p.op = o.value; }
+          return onGenerate("analyze_time_series", p);
+        }
         const p = { chart_type: type.value, x: x.value };
         if (type.value === "scatter") p.y = y.value;
         if (type.value === "box" && g.value) p.group_by = g.value;
-        onGenerate(p);
+        onGenerate("generate_chart", p);
       } });
-      box.append(el("div", { class: "card builder" }, el("label", {}, "Chart type", type), fx, fy, fg, go));
+      box.append(el("div", { class: "card builder" }, el("label", {}, "Chart type", type), fx, fy, fg, fd, fv, ff, fo, go));
     }
 
     if (!charts.length) box.append(el("div", { class: "empty" }, el("p", { class: "muted", text: "No charts yet. Ask a question in the AI Analyst or draw one above." })));

@@ -70,9 +70,10 @@ async function ask(question) {
   item.pending = false; state.asking = false; render();
 }
 
-async function generate(params) {
+async function generate(tool, params) {
   await soft("Drawing chart...", async () => {
-    const out = await Api.tool("generate_chart", params);
+    const out = await Api.tool(tool, params);
+    if (!out.chart) throw { message: "No chart could be drawn from that result." };
     state.charts.unshift({ chart: out.chart, source: "Chart builder" });
     render();
   });
