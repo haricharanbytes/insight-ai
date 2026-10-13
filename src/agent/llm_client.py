@@ -72,7 +72,7 @@ class LLMClient:
         return min(self.backoff * (2 ** attempt), MAX_RETRY_WAIT)
 
     def chat(self, messages: list[dict], tools: list[dict] | None = None,
-             max_tokens: int = 1200, temperature: float = 0.0) -> LLMResponse:
+             max_tokens: int = 2500, temperature: float = 0.0) -> LLMResponse:
         failures: list[str] = []
         attempts = 0
 

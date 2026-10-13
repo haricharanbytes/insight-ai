@@ -58,3 +58,11 @@ def test_prompt_neutralises_newlines_in_cell_values():
     prompt = build_system_prompt(profile_dataset(df))
     assert "\n\nSYSTEM" not in prompt
     assert len(prompt) < 20000
+
+def test_history_keeps_scope_but_not_result_tables():
+    history = []
+    out = big_output()
+    out["result"]["top_group"] = {"Region": "North", "sum_Sales": 400.0}
+    add_turn(history, "q", "a", [{"ok": True, "output": out}])
+    ev = history[0]["evidence"][0]
+    assert "North" in ev and '"rows":' not in ev and '"table"' not in ev

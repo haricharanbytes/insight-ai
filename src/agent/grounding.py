@@ -43,6 +43,8 @@ def find_unverified_numbers(answer: str, outputs: list[dict], extra_text: list[s
                 pass
             
     text = _DATE.sub(" ", answer or "")
+    answer = (answer or "").translate({0x2010: "-", 0x2011: "-", 0x2012: "-", 0x2013: "-", 0x2014: "-", 0x2212: "-"})
+    text = _DATE.sub(" ", answer)
     unverified: list[str] = []
     for m in _NUM.finditer(text):
         raw = m.group(1).replace(",", "")

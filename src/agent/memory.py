@@ -39,8 +39,13 @@ def compact_output(output: dict) -> dict:
 
 
 def _digest(step: dict) -> str:
-    view = _view(step["output"], DIGEST_ROWS)
-    view.pop("method", None)
+    """Scope and top result only. Old numbers must be re-fetched, not copied."""
+    out = step["output"]
+    res = out.get("result") or {}
+    view = {"tool": out.get("tool"), "inputs": out.get("inputs"), "rows_used": out.get("rows_used")}
+    for key in ("top_group", "bottom_group"):
+        if key in res:
+            view[key] = res[key]
     text = json.dumps(view, default=str)
     return text if len(text) <= DIGEST_CHARS else text[:DIGEST_CHARS] + "...[cut]"
 
@@ -53,13 +58,14 @@ def add_turn(history: list, question: str, answer: str, steps: list[dict]) -> No
 
 
 def history_messages(history: list) -> list[dict]:
-    """Earlier turns as chat messages, with the verified results behind each answer."""
+    """Earlier turns as chat messages, with the scope each answer used."""
     messages: list[dict] = []
     for turn in history[-MAX_TURNS:]:
         messages.append({"role": "user", "content": turn["question"]})
         content = turn["answer"]
         if turn["evidence"]:
-            content += ("\n\n[Verified results behind this answer - reference only, "
-                        "never repeat this section]\n" + "\n".join(turn["evidence"]))
+            content += ("\n\n[Verified results behind this answer: scope used earlier, for resolving "
+                        "references like 'it' only. Do NOT reuse these numbers or this scope for a new "
+                        "question; call a tool.]\n" + "\n".join(turn["evidence"]))
         messages.append({"role": "assistant", "content": content})
     return messages

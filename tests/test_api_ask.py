@@ -39,7 +39,7 @@ def test_followup_uses_conversation_memory(monkeypatch):
     use(monkeypatch, ScriptedClient([tool_msg("group_by_aggregate", ARGS), text_msg("North, 400.")]))
     client.post("/api/ask", json={"question": "Which region sells most?"}, headers=h)
 
-    second = ScriptedClient([text_msg("Answer: it is North.")])
+    second = ScriptedClient([text_msg("Answer: it is North."), text_msg("Answer: it is North.")])
     use(monkeypatch, second)
     client.post("/api/ask", json={"question": "Show its profit"}, headers=h)
     msgs = second.calls[0]["messages"]

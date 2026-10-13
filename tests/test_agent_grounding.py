@@ -39,3 +39,6 @@ def test_numbers_in_warnings_and_history_count_as_evidence():
     prior = ['{"rows": [["2017Q4", 104759.1234]], "inputs": {}}']
     assert find_unverified_numbers("Sales were $104,759.", [], prior) == []
     assert find_unverified_numbers("Sales were $104,760.5.", [], prior) == ["$104,760.5"]
+
+def test_unicode_hyphen_dates_ignored():
+    assert find_unverified_numbers("Data ends 2017\u201112\u201130, so Q4 is complete.", []) == []

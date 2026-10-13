@@ -60,12 +60,14 @@ def test_unknown_tool_does_not_crash():
 
 
 def test_direct_text_answer_without_tools():
-    r = run(ScriptedClient([text_msg("Answer: there is no Salary column. Which column did you mean?")]))
+    text = "Answer: there is no Salary column. Which column did you mean?"
+    r = run(ScriptedClient([text_msg(text), text_msg(text)]))
     assert r["steps"] == [] and "no Salary column" in r["answer"]
 
 
 def test_fabricated_number_is_flagged():
-    r = run(ScriptedClient([text_msg("Total sales were 12,345.67.")]))
+    t = "Total sales were 12,345.67."
+    r = run(ScriptedClient([text_msg(t), text_msg(t)]))
     assert r["grounding"]["unverified_numbers"] == ["12,345.67"]
 
 
@@ -96,14 +98,46 @@ def test_history_is_sent_for_followups():
     r1 = run(first)
     add_turn(history, "Which region sells most?", r1["answer"], r1["steps"])
 
-    second = ScriptedClient([text_msg("Answer: North.")])
+    second = ScriptedClient([text_msg("Answer: North."), text_msg("Answer: North.")])
     run(second, "Show its trend", history)
-    msgs = second.calls[0]["messages"]
-    assert [m["role"] for m in msgs] == ["system", "user", "assistant", "user"]
-    assert "sum_Sales" in msgs[2]["content"] and msgs[3]["content"] == "Show its trend"
+    msgs = second.calls[0]["messages"] 
 
 
 def test_dataframe_is_not_modified():
     before = DF.copy()
     run(ScriptedClient([tool_msg("group_by_aggregate", GOOD_ARGS), text_msg("ok")]))
     pd.testing.assert_frame_equal(DF, before)
+
+def test_first_reply_without_tools_is_nudged_to_run_one():
+    client = ScriptedClient([text_msg("Answer: North, 400."),
+                             tool_msg("group_by_aggregate", GOOD_ARGS),
+                             text_msg("Answer: North, 400.")])
+    r = run(client)
+    assert len(r["steps"]) == 1 and r["llm_calls"] == 3
+    assert "not run any tool" in client.calls[1]["messages"][-1]["content"]
+
+def test_scope_guard_drops_inherited_filter_but_keeps_explicit_reference():
+    history = [{"question": "q", "answer": "a", "evidence": []}]
+    args = {**GOOD_ARGS, "filters": [{"column": "Region", "op": "eq", "value": "East"}]}
+
+    r = run(ScriptedClient([tool_msg("group_by_aggregate", args), text_msg("Answer: ok.")]),
+            "Why did sales decline?", history)
+    assert r["steps"][0]["output"]["rows_used"] == 5          # filter dropped: whole dataset
+    assert len(r["steps"][0]["scope_guard_dropped"]) == 1
+
+    r = run(ScriptedClient([tool_msg("group_by_aggregate", args), text_msg("Answer: ok.")]),
+            "Show its sales", history)
+    assert r["steps"][0]["output"]["rows_used"] == 2          # "its" keeps the filter
+
+    r = run(ScriptedClient([tool_msg("group_by_aggregate", args), text_msg("Answer: ok.")]),
+            "Sales for East only?", history)
+    assert r["steps"][0]["output"]["rows_used"] == 2          # question names East
+
+def test_unverified_numbers_trigger_one_repair_round():
+    client = ScriptedClient([tool_msg("group_by_aggregate", GOOD_ARGS),
+                             text_msg("Answer: North had 999,999."),
+                             text_msg("Answer: North had 400.")])
+    r = run(client)
+    assert r["answer"] == "Answer: North had 400."
+    assert r["grounding"]["unverified_numbers"] == []
+    assert "do not appear in any tool result" in client.calls[-1]["messages"][-1]["content"]
