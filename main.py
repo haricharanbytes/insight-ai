@@ -2,14 +2,12 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-
-from config import get_settings
-from src.api.errors import register_handlers
-from src.api.routes import router
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from config import BASE_DIR
+from config import BASE_DIR, get_settings
+from src.api.errors import register_handlers
+from src.api.routes import router
 
 settings = get_settings()
 
@@ -32,6 +30,20 @@ register_handlers(app)
 app.include_router(router)
 
 
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    if not request.url.path.startswith(("/docs", "/redoc", "/openapi")):
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self' https://cdn.plot.ly 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; "
+            "frame-ancestors 'none'")
+    return response
+
+
 @app.get("/api/health")
 def health() -> dict:
     # Never return the API key or any secret here.
@@ -43,6 +55,7 @@ def health() -> dict:
         "llm_model": settings.llm_model or None,
         "max_upload_mb": settings.max_upload_mb,
     }
+
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
