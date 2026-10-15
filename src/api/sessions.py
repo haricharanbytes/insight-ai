@@ -27,6 +27,7 @@ class Session:
     results: "OrderedDict[str, dict]" = field(default_factory=OrderedDict)
     history: list = field(default_factory=list)  # used by the agent in Step 6
     report_items: list = field(default_factory=list)  # [{question, answer, unverified, tool_steps}]
+    dashboard: object = None  # src.dashboard.spec.Dashboard or None
 
     def set_dataset(self, load: LoadResult, profile: dict) -> None:
         self.load = load
@@ -34,6 +35,7 @@ class Session:
         self.pending = None
         self.results.clear()
         self.history.clear()
+        self.dashboard = None
 
     def clear_dataset(self) -> None:
         self.load = None

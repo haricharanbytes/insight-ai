@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from config import BASE_DIR, get_settings
 from src.api.errors import register_handlers
 from src.api.routes import router
+from src.api.dashboard_routes import router as dashboard_router
 
 settings = get_settings()
 
@@ -28,6 +29,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
 register_handlers(app)
 app.include_router(router)
+app.include_router(dashboard_router)
 
 
 @app.middleware("http")
