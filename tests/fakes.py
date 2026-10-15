@@ -28,3 +28,7 @@ def tool_msg(name, args, cid="c1", raw_arguments=None):
 
 def text_msg(text):
     return {"role": "assistant", "content": text}
+
+def json_msg(obj):
+    import json as _json
+    return {"role": "assistant", "content": _json.dumps(obj)}
