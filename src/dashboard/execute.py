@@ -50,6 +50,7 @@ def widget_call(w, filters: list[dict]) -> tuple[str, dict]:
     p = {"limit": w.limit}
     if w.columns:
         p["columns"] = list(w.columns)
+    
     if not filters:
         # filter_data requires at least one filter; "not_null" on any column keeps all rows with a value,
         # so use a cheap always-true approach handled in execute_widget instead.
