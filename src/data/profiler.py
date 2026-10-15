@@ -284,8 +284,10 @@ def _build_issues(columns: list[dict], dup_count: int, n_rows: int) -> list[dict
             if c["negative_count"] > 0:
                 issues.append(_issue(
                     "info", "negative_values",
-                    f"{c['negative_count']:,} negative values. They may be refunds, "
-                    "losses, or entry errors.", review, name))
+                    f"{c['negative_count']:,} negative values. Check whether negatives are valid "
+                    "for this column or are data-entry errors.",
+                    "Confirm what negative values mean in this column before using it in totals "
+                    "or averages. Nothing was changed.", name))
             if c["inf_count"] > 0:
                 issues.append(_issue(
                     "warning", "infinite_values",

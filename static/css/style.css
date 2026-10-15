@@ -61,3 +61,5 @@ pre{background:#f3f6fb;border-radius:8px;padding:10px;overflow-x:auto;font-size:
 .builder{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
 .builder label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
 .builder select,.card input[type=text],.card select{padding:7px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+
+[hidden]{display:none !important}
