@@ -191,6 +191,102 @@ def _column_summary(out: dict) -> dict | None:
 def _generated(out: dict) -> dict | None:
     return out["result"].get("chart")
 
+def _forecast(out: dict) -> dict | None:
+    res, table = out["result"], out["table"]
+    show = res.get("intervals_shown_for")
+    if not table or not table["rows"] or not show:
+        return None
+    hist = res["history"]                      # [[period, actual], ...] (last 24)
+    idx = _cols(table)
+    per = [r[idx["period"]] for r in table["rows"]]
+    point = [r[idx[show]] for r in table["rows"]]
+    lo, hi = [r[idx["low_95"]] for r in table["rows"]], [r[idx["high_95"]] for r in table["rows"]]
+    title = f"Forecast ({show.replace('_', ' ')})"
+    data = [
+        {"type": "scatter", "mode": "lines+markers", "name": "history", "x": [h[0] for h in hist], "y": [h[1] for h in hist],
+         "line": {"color": NAVY}, "hovertemplate": "%{x}<br>%{y:,.2f}<extra>history</extra>"},
+        {"type": "scatter", "mode": "lines", "name": "upper 95%", "x": per, "y": hi, "line": {"width": 0}, "showlegend": False,
+         "hoverinfo": "skip"},
+        {"type": "scatter", "mode": "lines", "name": "95% interval", "x": per, "y": lo, "fill": "tonexty",
+         "fillcolor": "rgba(47,111,219,0.18)", "line": {"width": 0}, "hoverinfo": "skip"},
+        {"type": "scatter", "mode": "lines+markers", "name": "forecast", "x": per, "y": point, "line": {"color": BLUE, "dash": "dash"},
+         "hovertemplate": "%{x}<br>%{y:,.2f}<extra>forecast</extra>"},
+    ]
+    verdict = res["verdict"]
+    return _chart("line", title, f"History and forecast with a 95% interval. {verdict}", data,
+                  _layout(title, "Period", "Value", showlegend=True))
+
+
+def _clusters(out: dict) -> dict | None:
+    pca = out["result"].get("pca")
+    if not pca:
+        return None
+    data = []
+    for c in sorted(set(pca["cluster"])):
+        pts = [i for i, v in enumerate(pca["cluster"]) if v == c]
+        data.append({"type": "scattergl", "mode": "markers", "name": f"cluster {c}",
+                     "x": [pca["x"][i] for i in pts], "y": [pca["y"][i] for i in pts],
+                     "marker": {"color": PALETTE[c % len(PALETTE)], "size": 6, "opacity": 0.7}})
+    v = pca["variance_explained_pct"]
+    title = f"Clusters (k = {out['result']['k']}) on the first two principal components"
+    return _chart("scatter", title,
+                  f"Each point is a row, projected to 2D (the axes explain {v[0]}% and {v[1]}% of the variation). "
+                  "Overlap in this view does not mean the clusters are the same in the full data.",
+                  data, _layout(title, "Component 1", "Component 2", showlegend=True))
+
+
+def _regression(out: dict) -> dict | None:
+    table = out["table"]
+    idx = _cols(table)
+    rows = [r for r in table["rows"] if r[idx["term"]] != "const"]
+    if not rows:
+        return None
+    model = out["result"]["model"]
+    x = [r[idx["coefficient"]] for r in rows]
+    data = [{"type": "scatter", "mode": "markers", "x": x, "y": [r[idx["term"]] for r in rows],
+             "marker": {"color": BLUE, "size": 9},
+             "error_x": {"type": "data", "symmetric": False,
+                         "array": [r[idx["ci_high"]] - r[idx["coefficient"]] for r in rows],
+                         "arrayminus": [r[idx["coefficient"]] - r[idx["ci_low"]] for r in rows]},
+             "hovertemplate": "%{y}: %{x:,.3f}<extra></extra>"}]
+    shapes = [{"type": "line", "x0": 0, "x1": 0, "yref": "paper", "y0": 0, "y1": 1, "line": {"color": GREY, "dash": "dash"}}]
+    title = f"{'Linear' if model == 'linear' else 'Logistic'} regression coefficients with 95% intervals"
+    return _chart("scatter", title, "Points are estimates; bars are confidence intervals. Intervals crossing the dashed zero line "
+                  "are not clearly different from no effect. Association, not causation.",
+                  data, _layout(title, "Coefficient", "", shapes=shapes))
+
+
+def _anomalies(out: dict) -> dict | None:
+    table = out["table"]
+    if not table or not table["rows"]:
+        return None
+    idx = _cols(table)
+    data = [{"type": "bar", "orientation": "h", "x": [r[idx["anomaly_score"]] for r in table["rows"]][::-1],
+             "y": [f"row {r[idx['row_number']]}" for r in table["rows"]][::-1], "marker": {"color": "#c47f17"},
+             "customdata": [r[idx["driven_by"]] for r in table["rows"]][::-1],
+             "hovertemplate": "%{y}<br>score %{x:.3f}<br>driven by %{customdata}<extra></extra>"}]
+    title = "Most unusual rows (anomaly score)"
+    return _chart("bar", title, "Higher score means a more unusual combination of values. Flagged rows are not necessarily errors.",
+                  data, _layout(title, "Anomaly score", "", height=max(260, 28 * len(table["rows"]) + 110),
+                                margin={"l": 80, "r": 20, "t": 50, "b": 50}))
+
+
+def _posthoc(out: dict) -> dict | None:
+    table = out["table"]
+    if not table or not table["rows"]:
+        return None
+    idx = _cols(table)
+    rows = table["rows"][:MAX_BARS][::-1]
+    data = [{"type": "bar", "orientation": "h", "x": [r[idx["p_adjusted"]] for r in rows],
+             "y": [f"{r[idx['group_a']]} vs {r[idx['group_b']]}" for r in rows],
+             "marker": {"color": [BLUE if r[idx["significant"]] else GREY for r in rows]},
+             "hovertemplate": "%{y}<br>adjusted p = %{x:.4f}<extra></extra>"}]
+    alpha = out["result"]["alpha"]
+    shapes = [{"type": "line", "x0": alpha, "x1": alpha, "yref": "paper", "y0": 0, "y1": 1, "line": {"color": "#a11d33", "dash": "dash"}}]
+    title = "Pairwise comparisons (adjusted p-values)"
+    return _chart("bar", title, f"Blue bars are significant after correction (adjusted p below {alpha}, the dashed line).",
+                  data, _layout(title, "Adjusted p-value", "", shapes=shapes, height=max(260, 28 * len(rows) + 110),
+                                margin={"l": 140, "r": 20, "t": 50, "b": 50}))
 BUILDERS = {
     "group_by_aggregate": _bar_or_donut,
     "analyze_time_series": _time_series,
@@ -199,6 +295,11 @@ BUILDERS = {
     "run_statistical_test": _stat_test,
     "get_column_summary": _column_summary,
     "generate_chart": _generated,
+    "forecast_series": _forecast,
+    "cluster_data": _clusters,
+    "run_regression": _regression,
+    "detect_anomalies": _anomalies,
+    "run_posthoc_tests": _posthoc,
 }
 
 

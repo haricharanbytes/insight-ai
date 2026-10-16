@@ -11,6 +11,9 @@ from src.analysis.filtering import FILTER_OPS
 from src.analysis.outliers import METHODS as OUTLIER_METHODS
 from src.analysis.statistics import TESTS
 from src.analysis.timeseries import FREQS, TS_OPS
+from src.analysis.posthoc import CORRECTIONS, PAIR_METHODS
+from src.analysis.regression import MODELS as REGRESSION_MODELS
+from src.analysis.forecasting import METHODS as FORECAST_METHODS
 
 STR = {"type": "string"}
 
@@ -158,6 +161,90 @@ TOOL_SCHEMAS: dict[str, dict] = {
                 "filters": FILTERS,
             },
             "required": ["chart_type", "x"],
+        },
+    },
+        "run_regression": {
+        "description": "Explain a numeric target (linear) or a two-value target (logistic) from several predictors: coefficients, confidence intervals, p-values, fit and diagnostics. Association only, not causation; no predictions for new inputs.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "target": {"type": "string", "description": "Column to explain."},
+                "predictors": _strs("1-10 predictor columns (numeric, boolean, or categorical with at most 8 values)."),
+                "model": {"type": "string", "enum": list(REGRESSION_MODELS)},
+                "filters": FILTERS,
+                "alpha": {"type": "number", "description": "Significance level, default 0.05."},
+            },
+            "required": ["target", "predictors"],
+        },
+    },
+    "forecast_series": {
+        "description": "Forecast a value per period ahead, backtested against a naive baseline. Recommends a method only if it beat naive. Needs a date column and at least 12 periods.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "date_column": {"type": "string", "description": "Exact name of a date column."},
+                "value_column": {"type": "string", "description": "Numeric column to forecast. Omit to forecast row counts."},
+                "op": {"type": "string", "enum": list(TS_OPS)},
+                "freq": {"type": "string", "enum": list(FREQS), "description": "D, W, M, Q or Y."},
+                "horizon": {"type": "integer", "description": "Periods ahead; at most a third of the history."},
+                "methods": {"type": "array", "items": {"type": "string", "enum": list(FORECAST_METHODS)}},
+                "filters": FILTERS,
+            },
+            "required": ["date_column"],
+        },
+    },
+    "cluster_data": {
+        "description": "Group rows into clusters with k-means on standardized numeric columns; returns cluster sizes and per-cluster means. Clusters are a summary, not natural groups.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "columns": _strs("2-10 numeric columns (optional; default all numeric non-identifier columns)."),
+                "k": {"type": "integer", "description": "Number of clusters 2-8; omit to choose automatically."},
+                "filters": FILTERS,
+            },
+            "required": [],
+        },
+    },
+    "detect_anomalies": {
+        "description": "Find rows that are unusual across several numeric columns at once (Isolation Forest). The number flagged is a setting, not a finding.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "columns": _strs("2-10 numeric columns (optional)."),
+                "contamination": {"type": "number", "description": "Share of rows to flag, 0.001-0.2 (default 0.02)."},
+                "filters": FILTERS,
+                "limit": {"type": "integer", "description": "Rows listed, max 20."},
+            },
+            "required": [],
+        },
+    },
+    "check_test_assumptions": {
+        "description": "Check normality (Shapiro-Wilk) and equal variances (Levene) of a numeric column across groups, and recommend a parametric or rank-based test.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "value_column": {"type": "string", "description": "Numeric column."},
+                "group_column": {"type": "string", "description": "Categorical column defining the groups."},
+                "groups": _strs("Which group values to include (optional)."),
+                "filters": FILTERS,
+            },
+            "required": ["value_column", "group_column"],
+        },
+    },
+    "run_posthoc_tests": {
+        "description": "Pairwise comparisons between all groups with multiple-comparison correction. Use after a significant anova or kruskal result.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "value_column": {"type": "string", "description": "Numeric column."},
+                "group_column": {"type": "string", "description": "Categorical column defining the groups."},
+                "method": {"type": "string", "enum": list(PAIR_METHODS)},
+                "correction": {"type": "string", "enum": list(CORRECTIONS)},
+                "groups": _strs("Which group values to include (optional, max 12)."),
+                "filters": FILTERS,
+                "alpha": {"type": "number", "description": "Significance level, default 0.05."},
+            },
+            "required": ["value_column", "group_column"],
         },
     },
 }

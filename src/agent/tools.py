@@ -14,6 +14,11 @@ from src.analysis.outliers import detect_outliers
 from src.analysis.statistics import get_column_summary, run_statistical_test
 from src.analysis.timeseries import analyze_time_series
 from src.analysis.charting import generate_chart
+from src.analysis.anomalies import detect_anomalies
+from src.analysis.clustering import cluster_data
+from src.analysis.forecasting import forecast_series
+from src.analysis.posthoc import check_test_assumptions, run_posthoc_tests
+from src.analysis.regression import run_regression
 
 TOOLS = {
     "get_column_summary": get_column_summary,
@@ -24,6 +29,12 @@ TOOLS = {
     "detect_outliers": detect_outliers,
     "run_statistical_test": run_statistical_test,
     "generate_chart": generate_chart,
+    "run_regression": run_regression,
+    "forecast_series": forecast_series,
+    "cluster_data": cluster_data,
+    "detect_anomalies": detect_anomalies,
+    "check_test_assumptions": check_test_assumptions,
+    "run_posthoc_tests": run_posthoc_tests,
 }
 
 
