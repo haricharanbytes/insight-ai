@@ -9,13 +9,13 @@ import statsmodels.api as sm
 from pandas.api import types as pdt
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.stattools import durbin_watson
-
+from .common import get_datetime_series
 from .common import AnalysisError, df_to_table, make_result, require_columns, require_numeric, to_py
 from .filtering import apply_filters
 
 MODELS = ("linear", "logistic")
-MAX_PREDICTORS = 10
-MAX_DUMMY_LEVELS = 8
+MAX_PREDICTORS = 20
+MAX_DUMMY_LEVELS = 30
 MIN_ROWS_PER_PREDICTOR = 10
 VIF_WARN = 10.0
 
@@ -33,6 +33,20 @@ def _design(work: pd.DataFrame, predictors: list[str], warnings: list[str]) -> p
         elif pdt.is_numeric_dtype(s):
             parts.append(s.astype(float).rename(p))
         else:
+            dates = None
+            if pdt.is_datetime64_any_dtype(s):
+                dates = s
+            else:
+                try:
+                    dates = get_datetime_series(work, p)
+                except AnalysisError:
+                    dates = None
+            if dates is not None:
+                days = (dates - dates.min()).dt.days.astype(float)
+                warnings.append(f"'{p}' is a date, so it was converted to days since its earliest value "
+                                f"({dates.min().date()}).")
+                parts.append(days.rename(p))
+                continue
             k = s.nunique()
             if k < 2:
                 raise AnalysisError(f"Predictor '{p}' has only one value.", "insufficient_data")
