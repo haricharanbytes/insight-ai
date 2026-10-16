@@ -15,6 +15,10 @@ Python (pandas/SciPy) tools, and the answer is checked against what those tools 
 - Plotly charts built from the tool results; HTML report and CSV exports (formula-injection safe)
 - Demo mode with rule-based routing when no API key is set
 - Dashboard builder: describe a dashboard in plain language (or build one automatically), then filter, reorder, add widgets by prompt, save/load as JSON, and export as HTML or images. The model only writes a validated spec; every number is computed by the same deterministic tools. Without an API key a rule-based builder is used.
+- Advanced analytics: OLS and logistic regression, forecasting (naive, seasonal naive, Holt-Winters, ARIMA)
+  validated by a holdout backtest against a naive baseline, k-means clustering, Isolation Forest anomaly
+  detection, normality/variance checks and post-hoc tests with multiple-comparison correction. Available
+  to the AI analyst and through forms on the Advanced page (works without an API key).
 
 ## Quick start
     python3 -m venv .venv && source .venv/bin/activate
@@ -71,6 +75,13 @@ vary between runs. Cost is $0 only because a free model was used.
 - Dashboard HTML export needs internet (Plotly CDN); the PDF option is the browser's print dialog.
 - Dashboard generation quality with free models varies; see exports/dashboard_benchmark.json from your own run.
 - The dashboard page's JavaScript has no automated tests; it was checked by hand.
+- Regression explains association only; no predictions for new inputs. Dates become days; categorical
+  predictors are limited to 30 values.
+- Forecasts come from a single holdout split and are not guarantees; a method is recommended only if it
+  beat the naive baseline.
+- Clustering and anomaly detection use numeric columns only; the number of anomalies is a setting.
+- The Advanced page and dashboard JavaScript were checked by hand, not by automated tests.
+- Advanced tools are not dashboard widgets.
 
 ## Production hardening needed
 Authentication, rate limiting, persistent storage, self-hosted Plotly with CSP tightening,
