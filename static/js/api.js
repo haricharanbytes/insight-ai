@@ -65,5 +65,15 @@ const Api = (() => {
     exportResult: (id) => download(`/api/export/result/${id}.csv`),
     exportDataset: (filters) => download("/api/export/dataset.csv", json({ filters })),
     exportReport: () => download("/api/export/report.html"),
+    dashGet: () => call("/api/dashboard"),
+    dashCreate: (prompt) => call("/api/dashboard", json({ prompt })),
+    dashDelete: () => call("/api/dashboard", { method: "DELETE" }),
+    dashAdd: (prompt) => call("/api/dashboard/widgets", json({ prompt })),
+    dashRemove: (id) => call(`/api/dashboard/widgets/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    dashOrder: (order) => call("/api/dashboard/order", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order }) }),
+    dashFilters: (filters) => call("/api/dashboard/filters", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filters }) }),
+    dashTitle: (title) => call("/api/dashboard/title", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title }) }),
+    dashSave: () => download("/api/dashboard/save"),
+    dashLoad: (file) => { const f = new FormData(); f.append("file", file); return call("/api/dashboard/load", { method: "POST", body: f }); },
   };
 })();

@@ -2,6 +2,7 @@
 const el = (tag, attrs = {}, ...kids) => {
   const n = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
+    if (v === null || v === undefined || v === false) continue;
     if (k === "class") n.className = v;
     else if (k === "text") n.textContent = v;
     else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
@@ -177,7 +178,7 @@ const Pages = {
     box.append(el("h1", { text: "Visualizations" }),
       el("p", { class: "muted", text: "Charts from your questions appear here, plus anything you build below. All charts are drawn from the dataset's real values." }));
 
-        const dates = columnsOf(ds, "datetime");
+    const dates = columnsOf(ds, "datetime");
     if (!num.length && !dates.length) box.append(el("div", { class: "card muted", text: "This dataset has no numeric or date columns to chart directly." }));
     else {
       const sel = (opts, blank) => el("select", {}, blank ? el("option", { value: "", text: blank }) : null, opts.map((c) => el("option", { value: c.name, text: c.name })));

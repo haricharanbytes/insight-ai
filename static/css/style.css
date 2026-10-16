@@ -61,5 +61,12 @@ pre{background:#f3f6fb;border-radius:8px;padding:10px;overflow-x:auto;font-size:
 .builder{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
 .builder label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
 .builder select,.card input[type=text],.card select{padding:7px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
-
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin:14px 0}
+.widget{margin:0}.widget.size-l{grid-column:1/-1}.widget.size-s{min-width:0}
+.whead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.wtools{display:flex;gap:4px}.wtools .btn{padding:2px 8px}
+.kpi-big{font-size:30px;font-weight:700;color:var(--navy)}
+.filterbar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-top:12px}
+.fl{display:flex;flex-direction:column;gap:4px;font-size:12px}.fl input,.fl select{padding:6px;border:1px solid var(--line);border-radius:8px;font:inherit}
+@media print{.sidebar,.menu-btn,.askbar,.wtools,.filterbar,.btn,.card.row{display:none !important}.main{padding:0}.dash-grid{display:block}.widget{break-inside:avoid;margin-bottom:12px}}
 [hidden]{display:none !important}

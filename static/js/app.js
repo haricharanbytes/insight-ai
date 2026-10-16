@@ -8,7 +8,10 @@ function banner(msg, kind = "error") {
 }
 function busy(text) { $("loading").hidden = !text; if (text) $("loading-text").textContent = text; }
 
-function resetWork() { state.chat = []; state.charts = []; state.asking = false; }
+function resetWork() {
+  state.chat = []; state.charts = []; state.asking = false;
+  Dash.state = { dash: null, results: {}, meta: null, busy: false, error: null };
+}
 
 function handleSessionReset(e) {
   if (e && e.code === "session_reset") { state.ds = null; resetWork(); banner(e.message, "info"); render(); return true; }
@@ -46,6 +49,7 @@ function render() {
   else if (state.page === "quality") page.append(Pages.quality(state.ds));
   else if (state.page === "analyst") page.append(Pages.analyst(state.ds, state.chat, state.asking, ask));
   else if (state.page === "visuals") page.append(Pages.visuals(state.ds, state.charts, generate));
+  else if (state.page === "dashboards") page.append(Dash.render(state.ds, render));
   else if (state.page === "reports") page.append(Pages.reports(state.ds, state.chat, {
     report: () => soft("Building the report...", () => Api.exportReport()),
     dataset: (f) => soft("Preparing the CSV...", () => Api.exportDataset(f)),

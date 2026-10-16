@@ -14,6 +14,7 @@ Python (pandas/SciPy) tools, and the answer is checked against what those tools 
 - Grounding check: numbers in an answer that cannot be matched to a tool result are flagged
 - Plotly charts built from the tool results; HTML report and CSV exports (formula-injection safe)
 - Demo mode with rule-based routing when no API key is set
+- Dashboard builder: describe a dashboard in plain language (or build one automatically), then filter, reorder, add widgets by prompt, save/load as JSON, and export as HTML or images. The model only writes a validated spec; every number is computed by the same deterministic tools. Without an API key a rule-based builder is used.
 
 ## Quick start
     python3 -m venv .venv && source .venv/bin/activate
@@ -65,6 +66,11 @@ vary between runs. Cost is $0 only because a free model was used.
 - Uploads are fully received before the size check; a reverse proxy should cap body size.
 - Ambiguous dates such as 3/4/2020 are read month-first.
 - Benchmark dataset is small and synthetic; accuracy on real messy data is not established.
+- Dashboards live in memory for the session (save as JSON to keep them). A saved file only loads against a dataset with the same columns.
+- Adding a widget by prompt needs the LLM; there is no rule-based equivalent.
+- Dashboard HTML export needs internet (Plotly CDN); the PDF option is the browser's print dialog.
+- Dashboard generation quality with free models varies; see exports/dashboard_benchmark.json from your own run.
+- The dashboard page's JavaScript has no automated tests; it was checked by hand.
 
 ## Production hardening needed
 Authentication, rate limiting, persistent storage, self-hosted Plotly with CSP tightening,
