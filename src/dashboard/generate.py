@@ -68,7 +68,6 @@ def extract_json(text: str) -> dict:
 def _ask(client, messages: list[dict]):
     resp = client.chat(messages, None, max_tokens=6000)
     text = (resp.message.get("content") or "").strip()
-    print("DASH REPLY LEN", len(text), repr(text[:120]), repr(text[-60:]))
     return text, resp
 
 
