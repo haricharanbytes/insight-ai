@@ -42,3 +42,8 @@ def test_numbers_in_warnings_and_history_count_as_evidence():
 
 def test_unicode_hyphen_dates_ignored():
     assert find_unverified_numbers("Data ends 2017\u201112\u201130, so Q4 is complete.", []) == []
+
+def test_percent_matches_stored_fraction():
+    out = [{"result": {"contamination": 0.02, "share": 0.364}}]
+    assert find_unverified_numbers("About 2% were flagged and 36.4% overall.", out) == []
+    assert find_unverified_numbers("About 2.5% were flagged.", out) == ["2.5%"]

@@ -34,15 +34,14 @@ def find_unverified_numbers(answer: str, outputs: list[dict], extra_text: list[s
     pool: list[float] = []
     for out in outputs:
         collect_numbers(out, pool)
-
+    # Numbers quoted inside tool warnings, and in verified results from earlier turns.
     for text in extra_text or []:
         for m in _PLAIN.finditer(text or ""):
             try:
                 pool.append(float(m.group(0).replace(",", "")))
             except ValueError:
                 pass
-            
-    text = _DATE.sub(" ", answer or "")
+
     answer = (answer or "").translate({0x2010: "-", 0x2011: "-", 0x2012: "-", 0x2013: "-", 0x2014: "-", 0x2212: "-"})
     text = _DATE.sub(" ", answer)
     unverified: list[str] = []
@@ -60,8 +59,16 @@ def find_unverified_numbers(answer: str, outputs: list[dict], extra_text: list[s
 
         mult = _MULT.get(suffix, 1.0)
         target = value * mult
-        tol = max(0.5 * 10 ** -decimals * mult, 1e-9 * abs(target)) + 1e-9
-        if not any(abs(abs(b) - target) <= tol for b in pool):
+        # A percentage may be stored as a fraction (36.4% vs 0.364).
+        candidates = [target] + ([target / 100] if suffix == "%" else [])
+
+        def matches(t: float) -> bool:
+            tol = max(0.5 * 10 ** -decimals * mult, 1e-9 * abs(t)) + 1e-9
+            if t is not target:
+                tol = max(0.5 * 10 ** -decimals * mult / 100, 1e-9 * abs(t)) + 1e-9
+            return any(abs(abs(b) - t) <= tol for b in pool)
+
+        if not any(matches(t) for t in candidates):
             token = m.group(0).strip()
             if token not in unverified:
                 unverified.append(token)
