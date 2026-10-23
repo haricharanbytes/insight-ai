@@ -56,6 +56,7 @@ function render() {
     report: () => soft("Building the report...", () => Api.exportReport()),
     dataset: (f) => soft("Preparing the CSV...", () => Api.exportDataset(f)),
     notice: (m) => banner(m, "info"),
+    eda: (ext, b) => soft("Building the report...", () => Api.edaReport(ext, b)),
   }));
   $("sidebar").classList.remove("open");
 }

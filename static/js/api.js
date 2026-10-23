@@ -75,5 +75,6 @@ const Api = (() => {
     dashTitle: (title) => call("/api/dashboard/title", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title }) }),
     dashSave: () => download("/api/dashboard/save"),
     dashLoad: (file) => { const f = new FormData(); f.append("file", file); return call("/api/dashboard/load", { method: "POST", body: f }); },
+    edaReport: (ext, body) => download(`/api/eda/report.${ext}`, json(body)),
   };
 })();

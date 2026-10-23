@@ -9,6 +9,7 @@ from config import BASE_DIR, get_settings
 from src.api.errors import register_handlers
 from src.api.routes import router
 from src.api.dashboard_routes import router as dashboard_router
+from src.api.eda_routes import router as eda_router
 
 settings = get_settings()
 
@@ -30,6 +31,7 @@ app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=li
 register_handlers(app)
 app.include_router(router)
 app.include_router(dashboard_router)
+app.include_router(eda_router)
 
 
 @app.middleware("http")

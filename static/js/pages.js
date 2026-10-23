@@ -246,6 +246,28 @@ const Pages = {
         } })) : null));
 
     box.append(el("div", { class: "card muted", text: "Result tables can be downloaded from 'Calculation and evidence' under any answer in the AI Analyst." }));
+        const keys = [["overview", "Overview"], ["quality", "Data quality"], ["numeric", "Numeric columns"], ["categories", "Categories"], ["trends", "Trends"], ["correlations", "Correlations"], ["groups", "Group differences"]];
+    const checks = keys.map(([k, t]) => { const i = el("input", { type: "checkbox", value: k, checked: "" }); return [i, el("label", { class: "row" }, i, t)]; });
+    const title = el("input", { type: "text", placeholder: "Report title", maxlength: "120" });
+    const author = el("input", { type: "text", placeholder: "Author (optional)", maxlength: "80" });
+    const ai = el("input", { type: "checkbox" });
+    const eFilterCol = el("select", {}, cat.map((c) => el("option", { value: c.name, text: c.name })));
+    const eFilterVal = el("input", { type: "text", placeholder: "Filter value (optional)" });
+    const opts = () => {
+      const b = { title: title.value.trim(), author: author.value.trim(), ai_summary: ai.checked,
+        sections: checks.filter(([i]) => i.checked).map(([i]) => i.value) };
+      if (!b.sections.length) { actions.notice("Select at least one section."); return null; }
+      if (cat.length && eFilterVal.value.trim()) b.filters = [{ column: eFilterCol.value, op: "eq", value: eFilterVal.value.trim() }];
+      return b;
+    };
+    const dl = (ext, label) => el("button", { class: "btn primary", text: label, onclick: () => { const b = opts(); if (b) actions.eda(ext, b); } });
+    box.append(el("div", { class: "card" }, el("b", { text: "Automated EDA report" }),
+      el("p", { class: "muted", text: "Runs a fixed set of analyses on the dataset and writes a report. It states what the data shows and gives no recommendations. Excel text cells are protected against formulas." }),
+      el("div", { class: "row" }, title, author),
+      el("div", { class: "row" }, checks.map(([, l]) => l)),
+      cat.length ? el("div", { class: "row" }, el("span", { class: "muted", text: "Only rows where" }), eFilterCol, el("span", { text: "=" }), eFilterVal) : null,
+      el("label", { class: "row" }, ai, "AI-written summary (needs an AI model; numbers are checked against the calculations)"),
+      el("div", { class: "row" }, dl("html", "Download HTML"), dl("xlsx", "Download Excel"), dl("pdf", "Download PDF"))));
     return box;
   },
 };
