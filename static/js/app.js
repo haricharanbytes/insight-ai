@@ -55,8 +55,8 @@ function render() {
   else if (state.page === "reports") page.append(Pages.reports(state.ds, state.chat, {
     report: () => soft("Building the report...", () => Api.exportReport()),
     dataset: (f) => soft("Preparing the CSV...", () => Api.exportDataset(f)),
-    notice: (m) => banner(m, "info"),
     eda: (ext, b) => soft("Building the report...", () => Api.edaReport(ext, b)),
+    notice: (m) => banner(m, "info"),
   }));
   $("sidebar").classList.remove("open");
 }
