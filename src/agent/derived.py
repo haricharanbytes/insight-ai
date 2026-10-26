@@ -22,16 +22,17 @@ def _digits(claim: Claim) -> int:
 
 
 def _pool(index: list[Source], step: int) -> list[Source]:
-    """Distinct non-trivial values from one step (bookkeeping and tiny values excluded)."""
-    seen, out = set(), []
+    """Distinct non-trivial values from one step. Among equal values, prefer the one with a row label."""
+    best: dict[float, Source] = {}
     for s in index:
         if s.step != step or s.path == "rows_used" or s.path.startswith(("inputs", "warnings")):
             continue
-        if abs(s.value) < 2 or round(s.value, 6) in seen:
+        if abs(s.value) < 2:
             continue
-        seen.add(round(s.value, 6))
-        out.append(s)
-    return out[:MAX_POOL]
+        key = round(s.value, 6)
+        if key not in best or (s.label and not best[key].label):
+            best[key] = s
+    return list(best.values())[:MAX_POOL]
 
 
 def _named(s: Source, sentence: str) -> bool:
